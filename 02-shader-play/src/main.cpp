@@ -8,30 +8,28 @@
 #include <iostream>
 #include <vector>
 
-// Simple Shaders (written in GLSL) that pass data between each other
+// Simple Shaders (written in GLSL)
 const char* vertexShaderSource = R"(
     #version 330 core
     layout (location = 0) in vec3 aPos;
-    layout (location = 1) in vec3 aColour;
     
     uniform mat4 transform;
-
-    out vec3 ourColour;
+    out vec4 vertexColour;
 
     void main() 
     {
         gl_Position = transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);
+        vertexColour = vec4(0.5, 0.0, 0.0, 1.0); // set the output variable
     }
 )";
 
 const char* fragmentShaderSource = R"(
     #version 330 core
     out vec4 FragColor;
-    in vec3 ourColour; // we set this variable in the OpenGL code.
-
+    in vec4 vertexColour;
     void main() 
     {
-        FragColor = vec4(ourColour, 1.0f);
+        FragColor = vertexColour;
     }
 )";
 
@@ -52,11 +50,10 @@ int main(int argc, char* argv[])
 
     // 1. Create VAO and VBO
     float vertices[] = {
-        // positions         // colors
-        0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
-        0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
-    };    
+        -0.5f, -0.5f, 0.0f,
+         0.5f, -0.5f, 0.0f,
+         0.0f,  0.5f, 0.0f
+    };
 
     unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -66,12 +63,8 @@ int main(int argc, char* argv[])
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-
-    // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
-    glEnableVertexAttribArray(1);
 
     // 2. Compile Shaders (Simplified for this example)
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -115,13 +108,6 @@ int main(int argc, char* argv[])
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        float time_now = (float)SDL_GetTicks64() / 1000.0f;
-        float g_val = (glm::sin(time_now) * 0.45f) + 0.5f;
-
-        // int vertexColourLocation = glGetUniformLocation(shaderProgram, "ourColour");
-        glUseProgram(shaderProgram);
-        // glUniform4f(vertexColourLocation, 0.1f, g_val, 0.1f, 1.0f);
 
         // Setup a transformation matrix
         glm::mat4 trans = glm::mat4(1.0f); // 4x4 identity matrix
