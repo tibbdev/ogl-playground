@@ -8,30 +8,8 @@
 #include <iostream>
 #include <vector>
 
-// Simple Shaders (written in GLSL)
-const char* vertexShaderSource = R"(
-    #version 330 core
-    layout (location = 0) in vec3 aPos;
-    
-    uniform mat4 transform;
-    out vec4 vertexColour;
-
-    void main() 
-    {
-        gl_Position = transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);
-        vertexColour = vec4(0.5, 0.0, 0.0, 1.0); // set the output variable
-    }
-)";
-
-const char* fragmentShaderSource = R"(
-    #version 330 core
-    out vec4 FragColor;
-    in vec4 vertexColour;
-    void main() 
-    {
-        FragColor = vertexColour;
-    }
-)";
+#include "mad_shader.h"
+#include "resources.h"
 
 int main(int argc, char* argv[]) 
 {
@@ -47,6 +25,8 @@ int main(int argc, char* argv[])
 
     glewExperimental = GL_TRUE;
     glewInit();
+
+    resources_init(argv[0]);
 
     // 1. Create VAO and VBO
     float vertices[] = {
@@ -67,18 +47,7 @@ int main(int argc, char* argv[])
     glEnableVertexAttribArray(0);
 
     // 2. Compile Shaders (Simplified for this example)
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
+    Shader myshader = Shader("shaders/shader.vs", "shaders/shader.fs");
 
     // 3. Main Loop
     bool running = true;
@@ -114,10 +83,9 @@ int main(int argc, char* argv[])
         trans = glm::rotate(trans, (float)SDL_GetTicks64() / 1000.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 
         // Send it to the shader
-        unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+        myshader.setMat4("transform", trans);
 
-        glUseProgram(shaderProgram);
+        myshader.use();
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
