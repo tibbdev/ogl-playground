@@ -45,10 +45,10 @@ find_package(OpenGL REQUIRED)
 file(GLOB_RECURSE CORE_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 file(GLOB_RECURSE GRAPHICS_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/graphics/*.cpp")
 
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "" FORCE)
-endif()
-message("Build Type : ${CMAKE_BUILD_TYPE}")
+# if (NOT CMAKE_BUILD_TYPE)
+#     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "" FORCE)
+# endif()
+# message("Build Type : ${CMAKE_BUILD_TYPE}")
 
 add_executable(${PROJECT_NAME} ${CORE_SOURCES} ${GRAPHICS_SOURCES})
 
@@ -105,7 +105,7 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND $<$<AND:$<PLATFORM_ID:Linux>,$<NOT:$<CONFIG:Debug>>>:sh> $<$<AND:$<PLATFORM_ID:Linux>,$<NOT:$<CONFIG:Debug>>>:-c> "cat $<TARGET_FILE_NAME:${PROJECT_NAME}> data.zip > temp.bin && mv temp.bin $<TARGET_FILE_NAME:${PROJECT_NAME}> && chmod +x $<TARGET_FILE_NAME:${PROJECT_NAME}>"
     
     # Cleanup
-    COMMAND $<$<NOT:$<CONFIG:Debug>>:${CMAKE_COMMAND}> $<$<NOT:$<CONFIG:Debug>>:-E> $<$<NOT:$<CONFIG:Debug>>:remove> "data.zip"
+    # COMMAND $<$<NOT:$<CONFIG:Debug>>:${CMAKE_COMMAND}> $<$<NOT:$<CONFIG:Debug>>:-E> $<$<NOT:$<CONFIG:Debug>>:remove> "data.zip"
     
     WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
     COMMENT "Packing assets (Release only)..."
