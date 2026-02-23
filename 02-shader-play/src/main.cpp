@@ -30,9 +30,9 @@ int main(int argc, char* argv[])
 
     // 1. Create VAO and VBO
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f
+        -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
+         0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
+         0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f
     };
 
     unsigned int VBO, VAO;
@@ -43,8 +43,13 @@ int main(int argc, char* argv[])
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    // Attribute 1 : Position Data
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+    // Attribute 2 : Colour Data
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // 2. Compile Shaders (Simplified for this example)
     Shader myshader = Shader("shaders/shader.vs", "shaders/shader.fs");
@@ -80,10 +85,15 @@ int main(int argc, char* argv[])
 
         // Setup a transformation matrix
         glm::mat4 trans = glm::mat4(1.0f); // 4x4 identity matrix
-        trans = glm::rotate(trans, (float)SDL_GetTicks64() / 1000.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+        //trans = glm::rotate(trans, (float)SDL_GetTicks64() / 1000.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+
+        // Setup a translation matrix
+        glm::mat4 translation = glm::mat4(1.0f); // 4x4 identity matrix
+        translation = glm::translate(translation, glm::vec3(glm::sin((float)SDL_GetTicks64() / 1000.0f) * 0.3, 0.0f, 0.0f));
 
         // Send it to the shader
         myshader.setMat4("transform", trans);
+        myshader.setMat4("tanslate", translation);
 
         myshader.use();
         glBindVertexArray(VAO);
