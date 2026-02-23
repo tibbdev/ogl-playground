@@ -38,13 +38,6 @@ int main(int argc, char* argv[])
        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
     };
 
-    // Repeat on S axis, mirrored repeat on T axis...
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
-
-    // always use Nearest pixel
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -64,7 +57,7 @@ int main(int argc, char* argv[])
 
     // Attribute 3 : Texture Coordinate
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
 
     // 2. Compile Shaders (Simplified for this example)
     Shader myshader = Shader("shaders/shader.vs", "shaders/shader.fs");
@@ -73,12 +66,23 @@ int main(int argc, char* argv[])
     std::cout << "Image Width : " << mytextureimage.width << std::endl; 
     std::cout << "Image Height : " << mytextureimage.height << std::endl;
     std::cout << "Image Channels : " << mytextureimage.channels << std::endl;
+    std::cout << "Image Data Read : " << mytextureimage.pixels[0];
 
     uint32_t textureID;
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
+
+    // Repeat on S axis, mirrored repeat on T axis...
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
+    // always use Nearest pixel
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mytextureimage.width, mytextureimage.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, mytextureimage.pixels);
     glGenerateMipmap(GL_TEXTURE_2D);
+
 
     // free the image data now we've loaded it!
     stbi_image_free(mytextureimage.pixels);
@@ -126,7 +130,7 @@ int main(int argc, char* argv[])
 
         myshader.use();
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES,6, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLE_FAN,0, 4);
 
         SDL_GL_SwapWindow(window);
     }
