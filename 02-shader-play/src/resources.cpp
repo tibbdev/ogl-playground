@@ -13,22 +13,19 @@ void resources_init(const char* argv0)
         std::cout << "PhysFS Error: " << PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()) << std::endl;
     }
 
-    std::string baseDir = PHYSFS_getBaseDir();
-    std::string exePath = baseDir + "shader-play-ogl.exe";
+    std::cout << "argv[0] := " << argv0 << std::endl;
 
-    std::cout << "baseDir := " << baseDir << std::endl;
-    std::cout << "exePath := " << exePath << std::endl;
 
     // PhysFS directories
-    if (!PHYSFS_mount(PHYSFS_getBaseDir(), "/", 1))
+    if (!PHYSFS_mount(argv0, "/", 1))
     {
-        std::cout << "Failed to mount EXE : " << exePath << PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
+        std::cout << "Failed to mount EXE : " << argv0 << PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
     }
 
     // 2. Also mount the source folders (so changes show up without rebuilding)
     // Only do this during development!
-    PHYSFS_mount("./shaders", "/shaders", 1);
-    PHYSFS_mount("./assets", "/assets", 1);
+    PHYSFS_mount("./shaders", "shaders", 1);
+    PHYSFS_mount("./assets", "assets", 1);
 
     char** rc = PHYSFS_enumerateFiles("/");
     for (char** filename = rc; *filename != NULL; filename++) {
