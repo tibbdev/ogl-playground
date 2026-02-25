@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
     // 2. Compile Shaders (Simplified for this example)
     Shader myshader = Shader("shaders/shader.vs", "shaders/shader.fs");
-    ImageData mytextureimage = resources_load_image("assets/palettes/island-joy-16-4x4.png");
+    ImageData mytextureimage = resources_load_image("assets/imgs/bg-gry.png");
 
     std::cout << "Image Width : " << mytextureimage.width << std::endl; 
     std::cout << "Image Height : " << mytextureimage.height << std::endl;
