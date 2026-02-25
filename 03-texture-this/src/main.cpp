@@ -109,8 +109,7 @@ int main(int argc, char* argv[])
                     default:
                         break;
                 }
-            }
-            
+            }            
         }
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
