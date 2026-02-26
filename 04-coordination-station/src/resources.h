@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <string>
+#include "gltfloader.h"
 
 struct ImageData
 {

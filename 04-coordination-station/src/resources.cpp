@@ -90,3 +90,5 @@ ImageData resources_load_image(const std::string& filename)
 
     return result;
 }
+
+
