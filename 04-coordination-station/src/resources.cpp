@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+
 #include "stb_image.h"
 
 void resources_init(const char* argv0) 
@@ -54,7 +55,6 @@ std::string resources_load_file_to_string(const std::string& filename) {
     return content;
 }
 
-
 ImageData resources_load_image(const std::string& filename)
 {
     ImageData result;
@@ -86,6 +86,33 @@ ImageData resources_load_image(const std::string& filename)
         {
             std::cout << "STB_ERROR :: " << stbi_failure_reason() << " for " << filename << std::endl;
         }
+    }
+
+    return result;
+}
+
+ModelData resources_load_model_glb(const std::string& filename)
+{
+    ModelData result;
+
+    tinygltf::TinyGLTF loader;
+
+    std::string file_content = resources_load_file_to_string(filename);
+    std::string err;
+    std::string warn;
+
+    if (!file_content.empty())
+    {
+        loader.LoadBinaryFromMemory(&result.model, &err, &warn, (const unsigned char*)file_content.c_str(), file_content.length());
+    }
+
+    if (!warn.empty())
+    {
+        std::cout << "RESOURCES :: Load .glb : WARNING : " << warn << std::endl;
+    }
+    if (!err.empty())
+    {
+        std::cout << "RESOURCES :: Load .glb : ERROR: " << warn << std::endl;
     }
 
     return result;
