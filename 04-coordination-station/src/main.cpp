@@ -17,8 +17,8 @@
 
 struct Settings
 {
-    uint32_t height = 600;
-    uint32_t width = 800;
+    float height = 600.0f;
+    float width = 800.0f;
     std::string title = "Modern OpenGL :: LearnOpenGL - Coordinate Systems...";
 };
 
@@ -119,9 +119,11 @@ int main(int argc, char* argv[])
     glewExperimental = GL_TRUE;
     glewInit();
 
+    glEnable(GL_DEPTH_TEST);
+
     resources_init(argv[0]);
 
-    ModelData my3dmodel = resources_load_model_glb("assets/models/box.glb");
+    ModelData my3dmodel = resources_load_model_glb("assets/models/bwoop.glb");
     uint32_t model_bind_result = bind_gltf_model(my3dmodel);
 
     if (0 != model_bind_result)
@@ -131,7 +133,7 @@ int main(int argc, char* argv[])
 
     // 2. Compile Shaders
     Shader myshader = Shader("shaders/vert-model.glsl", "shaders/frag-shader.glsl");
-    ImageData mytextureimage = resources_load_image("assets/imgs/bx-side.png");
+    ImageData mytextureimage = resources_load_image("assets/palettes/commodore64-1x.png");
     
     // Setup first texture
     uint32_t textureID;
@@ -296,7 +298,7 @@ int main(int argc, char* argv[])
         // std::cout << "POS := {" << position.x << "," << position.y << "}" << std::endl;
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Bind textures to texture units
         glActiveTexture(GL_TEXTURE0);
@@ -304,14 +306,22 @@ int main(int argc, char* argv[])
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, paletteID);
 
+        // setup a projection matrix
+        glm::mat4 project = glm::perspective(glm::radians(45.0f), g_settings.width / g_settings.height, 0.1f, 100.0f); glm::mat4 view = glm::mat4(1.0f);
+
+        // note that we're translating the scene in the reverse direction of where we want to move
+        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+
         // Setup a transformation matrix
         glm::mat4 trans = glm::mat4(1.0f); // 4x4 identity matrix
         trans = glm::translate(trans, glm::vec3(position.x, position.y, 0.0f));
-        trans = glm::rotate(trans, (float)SDL_GetTicks64() / 500.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+        trans = glm::rotate(trans, (float)SDL_GetTicks64() / 500.0f, glm::vec3(0.0f, 0.5f, 1.0f));
 
         // Send it to the shader
         myshader.setMat4("model", trans);
-        myshader.setFloat("factor", 1.0f);
+        myshader.setMat4("view", view);
+        myshader.setMat4("projection", project);
+        myshader.setFloat("factor", 0.0);
 
         glBindVertexArray(my3dmodel.vao);
         glDrawElements(GL_TRIANGLES, my3dmodel.indx_cnt, my3dmodel.type, 0);
