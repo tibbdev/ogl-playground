@@ -75,7 +75,7 @@ ImageData resources_load_image(const std::string& filename)
         PHYSFS_close(file);
 
         // Load that image baby!
-        stbi_set_flip_vertically_on_load(true);
+        stbi_set_flip_vertically_on_load(false);
         result.pixels = stbi_load_from_memory(
             buffer.data(), 
             static_cast<int>(size),

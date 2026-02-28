@@ -20,6 +20,8 @@ struct Settings
     float height = 600.0f;
     float width = 800.0f;
     std::string title = "Modern OpenGL :: LearnOpenGL - Coordinate Systems...";
+
+    float fov = 45.0f;
 };
 
 Settings g_settings;
@@ -30,6 +32,10 @@ uint32_t bind_gltf_model(ModelData& mdata)
     {
         std::cout << "bind_gltf_model :: Model is Empty, nothing to bind..." << std::endl;
         return -1;
+    }
+    else
+    {
+        std::cout << "bind_gltf_model :: Model contains " << mdata.model.meshes.size() << " meshes." << std::endl;
     }
     if (mdata.model.meshes.front().primitives.empty())
     {
@@ -123,7 +129,7 @@ int main(int argc, char* argv[])
 
     resources_init(argv[0]);
 
-    ModelData my3dmodel = resources_load_model_glb("assets/models/bwoop.glb");
+    ModelData my3dmodel = resources_load_model_glb("assets/models/better-box.glb");
     uint32_t model_bind_result = bind_gltf_model(my3dmodel);
 
     if (0 != model_bind_result)
@@ -133,8 +139,9 @@ int main(int argc, char* argv[])
 
     // 2. Compile Shaders
     Shader myshader = Shader("shaders/vert-model.glsl", "shaders/frag-shader.glsl");
-    ImageData mytextureimage = resources_load_image("assets/palettes/commodore64-1x.png");
-    
+    ImageData mytextureimage = resources_load_image("assets/palettes/sunset-red-8x.png");
+    //ImageData mytextureimage = resources_load_image("assets/palettes/shoshone-5-8x.png");
+        
     // Setup first texture
     uint32_t textureID;
     glGenTextures(1, &textureID);
@@ -155,7 +162,8 @@ int main(int argc, char* argv[])
     stbi_image_free(mytextureimage.pixels);
 
     // Setup second texture
-    ImageData mypalette = resources_load_image("assets/palettes/shido-cyberneon-1x.png");
+    //ImageData mypalette = resources_load_image("assets/palettes/shido-cyberneon-1x.png"););
+    ImageData mypalette = resources_load_image("assets/palettes/shoshone-5-8x.png");
     std::cout << "Image Width : " << mypalette.width << std::endl;
     std::cout << "Image Height : " << mypalette.height << std::endl;
     std::cout << "Image Channels : " << mypalette.channels << std::endl;
@@ -177,6 +185,20 @@ int main(int argc, char* argv[])
 
     // free the image data now we've loaded it!
     stbi_image_free(mypalette.pixels);
+
+    glm::vec3 cubePositions[] = 
+    {
+        glm::vec3(0.0f,  0.0f,  0.0f),
+        glm::vec3(2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3(2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3(1.3f, -2.0f, -2.5f),
+        glm::vec3(1.5f,  2.0f, -2.5f),
+        glm::vec3(1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
 
     myshader.use();
     glUniform1i(glGetUniformLocation(myshader.ID, "tex1"), 0);
@@ -213,6 +235,7 @@ int main(int argc, char* argv[])
             {
                 running = false;
             }
+            
             if (e.type == SDL_KEYDOWN)
             {
                 switch (e.key.keysym.sym)
@@ -247,6 +270,7 @@ int main(int argc, char* argv[])
                         break;
                 }
             }
+            
             if (e.type == SDL_KEYUP)
             {
                 switch (e.key.keysym.sym)
@@ -272,7 +296,17 @@ int main(int argc, char* argv[])
                         break;
                 }
             }
-        }
+            
+            if(e.type == SDL_MOUSEWHEEL)
+            {
+                if (e.wheel.direction > 0.1f)
+                {
+                    g_settings.fov += 2.0f;
+                }
+                else if (e.wheel.direction) < -0{
+                    5f
+                }   
+            }
 
         if(mv_keys[0])
         {
@@ -312,19 +346,29 @@ int main(int argc, char* argv[])
         // note that we're translating the scene in the reverse direction of where we want to move
         view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
 
-        // Setup a transformation matrix
-        glm::mat4 trans = glm::mat4(1.0f); // 4x4 identity matrix
-        trans = glm::translate(trans, glm::vec3(position.x, position.y, 0.0f));
-        trans = glm::rotate(trans, (float)SDL_GetTicks64() / 500.0f, glm::vec3(0.0f, 0.5f, 1.0f));
-
         // Send it to the shader
-        myshader.setMat4("model", trans);
         myshader.setMat4("view", view);
         myshader.setMat4("projection", project);
         myshader.setFloat("factor", 0.0);
 
         glBindVertexArray(my3dmodel.vao);
-        glDrawElements(GL_TRIANGLES, my3dmodel.indx_cnt, my3dmodel.type, 0);
+
+        for (size_t idx = 0; idx < (sizeof(cubePositions) / sizeof(cubePositions[0])); idx++)
+        {
+            // Setup a transformation matrix
+            glm::mat4 model = glm::mat4(1.0f); // 4x4 identity matrix
+            model = glm::translate(model, cubePositions[idx]);
+
+            float angle = 20.0f * idx;
+
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 3.0f, 5.0f));
+            model = glm::scale(model, glm::vec3(0.5f));
+
+            myshader.setMat4("model", model);
+
+            glDrawElements(GL_TRIANGLES, my3dmodel.indx_cnt, my3dmodel.type, 0);
+        }
+
 
         SDL_GL_SwapWindow(window);
         last = now;
