@@ -199,6 +199,10 @@ int main(int argc, char* argv[])
         glm::vec3(1.5f,  0.2f, -1.5f),
         glm::vec3(-1.3f,  1.0f, -1.5f)
     };
+    float cubeScales[] =
+    {
+        0.18f, 0.5f, 0.25f, 0.4f, 0.6f, 0.3f, 0.2f, 0.15f, 0.45f, 0.33f
+    };
 
     myshader.use();
     glUniform1i(glGetUniformLocation(myshader.ID, "tex1"), 0);
@@ -235,78 +239,91 @@ int main(int argc, char* argv[])
             {
                 running = false;
             }
-            
+
             if (e.type == SDL_KEYDOWN)
             {
                 switch (e.key.keysym.sym)
                 {
-                    case SDLK_ESCAPE:
-                        running = false;
-                        break;
+                case SDLK_ESCAPE:
+                    running = false;
+                    break;
 
-                    case SDLK_w:
-                    case SDLK_UP:
-                        mv_keys[0] = true;
-                        break;
-                    case SDLK_s:
-                    case SDLK_DOWN:
-                        mv_keys[1] = true;
-                        break;
-                    case SDLK_a:
-                    case SDLK_LEFT:
-                        mv_keys[2] = true;
-                        break;
-                    case SDLK_d:
-                    case SDLK_RIGHT:
-                        mv_keys[3] = true;
-                        break;
+                case SDLK_w:
+                case SDLK_UP:
+                    mv_keys[0] = true;
+                    break;
+                case SDLK_s:
+                case SDLK_DOWN:
+                    mv_keys[1] = true;
+                    break;
+                case SDLK_a:
+                case SDLK_LEFT:
+                    mv_keys[2] = true;
+                    break;
+                case SDLK_d:
+                case SDLK_RIGHT:
+                    mv_keys[3] = true;
+                    break;
 
-                    case SDLK_SPACE:
-                        position.x = 0.0f;
-                        position.y = 0.0f;
-                        break;
+                case SDLK_r:
+                    g_settings.fov = 45.0f;
+                    break;
 
-                    default:
-                        break;
+                case SDLK_SPACE:
+                    position.x = 0.0f;
+                    position.y = 0.0f;
+                    break;
+
+                default:
+                    break;
                 }
             }
-            
+
             if (e.type == SDL_KEYUP)
             {
                 switch (e.key.keysym.sym)
                 {
-                    case SDLK_w:
-                    case SDLK_UP:
-                        mv_keys[0] = false;
-                        break;
-                    case SDLK_s:
-                    case SDLK_DOWN:
-                        mv_keys[1] = false;
-                        break;
-                    case SDLK_a:
-                    case SDLK_LEFT:
-                        mv_keys[2] = false;
-                        break;
-                    case SDLK_d:
-                    case SDLK_RIGHT:
-                        mv_keys[3] = false;
-                        break;
+                case SDLK_w:
+                case SDLK_UP:
+                    mv_keys[0] = false;
+                    break;
+                case SDLK_s:
+                case SDLK_DOWN:
+                    mv_keys[1] = false;
+                    break;
+                case SDLK_a:
+                case SDLK_LEFT:
+                    mv_keys[2] = false;
+                    break;
+                case SDLK_d:
+                case SDLK_RIGHT:
+                    mv_keys[3] = false;
+                    break;
 
-                    default:
-                        break;
+                default:
+                    break;
                 }
             }
-            
-            if(e.type == SDL_MOUSEWHEEL)
+
+            if (e.type == SDL_MOUSEWHEEL)
             {
-                if (e.wheel.direction > 0.1f)
+                if (e.wheel.y > 0.1f)
                 {
-                    g_settings.fov += 2.0f;
+                    if (g_settings.fov < 90.0f)
+                    {
+                        g_settings.fov += 0.5f;
+                    }
                 }
-                else if (e.wheel.direction) < -0{
-                    5f
-                }   
+                else if (e.wheel.y < -0.1f)
+                {
+                    if (g_settings.fov > 5.0f)
+                    {
+                        g_settings.fov -= 0.5f;
+                    }
+                }
+                //std::cout << "fov := " << g_settings.fov << std::endl;
             }
+        }
 
         if(mv_keys[0])
         {
@@ -341,7 +358,7 @@ int main(int argc, char* argv[])
         glBindTexture(GL_TEXTURE_2D, paletteID);
 
         // setup a projection matrix
-        glm::mat4 project = glm::perspective(glm::radians(45.0f), g_settings.width / g_settings.height, 0.1f, 100.0f); glm::mat4 view = glm::mat4(1.0f);
+        glm::mat4 project = glm::perspective(glm::radians(g_settings.fov), g_settings.width / g_settings.height, 0.1f, 100.0f); glm::mat4 view = glm::mat4(1.0f);
 
         // note that we're translating the scene in the reverse direction of where we want to move
         view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
@@ -361,8 +378,13 @@ int main(int argc, char* argv[])
 
             float angle = 20.0f * idx;
 
+            model = glm::scale(model, glm::vec3(cubeScales[idx]));
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 3.0f, 5.0f));
-            model = glm::scale(model, glm::vec3(0.5f));
+            
+            if (0 == (idx % 3))
+            {
+                model = glm::rotate(model, glm::radians(now / 2000.0f), glm::vec3(0.5f, 0.5f, 1.0f));
+            }
 
             myshader.setMat4("model", model);
 
