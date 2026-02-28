@@ -15,6 +15,9 @@
 #include "resources.h"
 #include "stb_image.h"
 
+constexpr float floor_x = 16;
+constexpr float floor_y = 64;
+
 struct Settings
 {
     float height = 600.0f;
@@ -137,6 +140,13 @@ int main(int argc, char* argv[])
         return model_bind_result;
     }
 
+    ModelData basicCube = resources_load_model_glb("assets/models/box.glb");
+    model_bind_result = bind_gltf_model(basicCube);
+    if (0 != model_bind_result)
+    {
+        return model_bind_result;
+    }
+
     // 2. Compile Shaders
     Shader myshader = Shader("shaders/vert-model.glsl", "shaders/frag-shader.glsl");
     ImageData mytextureimage = resources_load_image("assets/palettes/sunset-red-8x.png");
@@ -164,9 +174,6 @@ int main(int argc, char* argv[])
     // Setup second texture
     //ImageData mypalette = resources_load_image("assets/palettes/shido-cyberneon-1x.png"););
     ImageData mypalette = resources_load_image("assets/palettes/shoshone-5-8x.png");
-    std::cout << "Image Width : " << mypalette.width << std::endl;
-    std::cout << "Image Height : " << mypalette.height << std::endl;
-    std::cout << "Image Channels : " << mypalette.channels << std::endl;
 
     uint32_t paletteID;
     glGenTextures(1, &paletteID);
@@ -203,6 +210,15 @@ int main(int argc, char* argv[])
     {
         0.18f, 0.5f, 0.25f, 0.4f, 0.6f, 0.3f, 0.2f, 0.15f, 0.45f, 0.33f
     };
+
+    glm::vec3 cubedfloor[(uint16_t)(floor_x * floor_y)];
+    for (float y = 0; floor_y > y; y += 1.0f)
+    {
+        for (float x = 0; floor_x > x; x += 1.0f)
+        {
+            cubedfloor[(uint16_t)(x + y * floor_x)] = glm::vec3((x - (floor_x * 0.5f)) * 0.5f, -2.0f, 0.5f * (y - floor_y * 0.5f));
+        }
+    }
 
     myshader.use();
     glUniform1i(glGetUniformLocation(myshader.ID, "tex1"), 0);
@@ -376,6 +392,13 @@ int main(int argc, char* argv[])
             glm::mat4 model = glm::mat4(1.0f); // 4x4 identity matrix
             model = glm::translate(model, cubePositions[idx]);
 
+            // Bounce first cube
+            if(idx == 0)
+            {
+                float sin_time = glm::sin(glm::radians(now/50));
+                model = glm::translate(model, glm::vec3(0.0f, sin_time * sin_time, 0.0f));
+            }
+
             float angle = 20.0f * idx;
 
             model = glm::scale(model, glm::vec3(cubeScales[idx]));
@@ -383,7 +406,7 @@ int main(int argc, char* argv[])
             
             if (0 == (idx % 3))
             {
-                model = glm::rotate(model, glm::radians(now / 2000.0f), glm::vec3(0.5f, 0.5f, 1.0f));
+                model = glm::rotate(model, glm::radians(now / 1000.0f), glm::vec3(0.5f, 0.5f, 1.0f));
             }
 
             myshader.setMat4("model", model);
@@ -391,6 +414,19 @@ int main(int argc, char* argv[])
             glDrawElements(GL_TRIANGLES, my3dmodel.indx_cnt, my3dmodel.type, 0);
         }
 
+        glBindVertexArray(basicCube.vao);
+
+        for (size_t idx = 0; idx < (sizeof(cubedfloor) / sizeof(cubedfloor[0])); idx++)
+        {
+            // Setup a transformation matrix
+            glm::mat4 model = glm::mat4(1.0f); // 4x4 identity matrix
+            model = glm::translate(model, cubedfloor[idx]);
+            model = glm::scale(model, glm::vec3(0.1f));
+
+            myshader.setMat4("model", model);
+
+            glDrawElements(GL_TRIANGLES, basicCube.indx_cnt, basicCube.type, 0);
+        }
 
         SDL_GL_SwapWindow(window);
         last = now;
