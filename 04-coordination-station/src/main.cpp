@@ -237,6 +237,8 @@ int main(int argc, char* argv[])
 
     glm::fvec2 direction = glm::fvec2(0.0f, 0.0f);
     float last = (float)SDL_GetTicks64();
+    // note that we're translating the scene in the reverse direction of where we want to move
+
 
     // 3. Main Loop
     bool running = true;
@@ -374,9 +376,9 @@ int main(int argc, char* argv[])
         glBindTexture(GL_TEXTURE_2D, paletteID);
 
         // setup a projection matrix
-        glm::mat4 project = glm::perspective(glm::radians(g_settings.fov), g_settings.width / g_settings.height, 0.1f, 100.0f); glm::mat4 view = glm::mat4(1.0f);
+        glm::mat4 project = glm::perspective(glm::radians(g_settings.fov), g_settings.width / g_settings.height, 0.1f, 100.0f); 
 
-        // note that we're translating the scene in the reverse direction of where we want to move
+        glm::mat4 view = glm::mat4(1.0f);
         view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
 
         // Send it to the shader
