@@ -19,12 +19,17 @@ constexpr float floor_x = 16;
 constexpr float floor_y = 64;
 constexpr float DEFAULT_WINDOW_H = 600.0f;
 constexpr float DEFAULT_WINDOW_W = 800.0f;
+constexpr float DEFAULT_MOUSE_SENSITIVITY = 0.05f;
 
 struct Camera
 {
     glm::vec3 position  = glm::vec3(0.0f, 0.0f, 5.0f);
     glm::vec3 front     = glm::vec3(0.0f, 0.0f, -1.0f); 
     glm::vec3 up        = glm::vec3(0.0f, 1.0f, 0.0f);
+    float     yaw       = 0.0f;
+    float     pitch     = 0.0f;
+    float     roll      = 0.0f;
+    glm::vec3 direction = glm::vec3(0.0f, 0.0f, 0.0f);
 };
 
 struct Settings
@@ -34,6 +39,7 @@ struct Settings
     std::string title = "Modern OpenGL :: LearnOpenGL - Coordinate Systems...";
 
     float fov = 45.0f;
+    float sensitivity = DEFAULT_MOUSE_SENSITIVITY;
 };
 
 Settings g_settings;
@@ -261,6 +267,16 @@ int main(int argc, char* argv[])
 
     uint8_t project_select = 0; // 0 == perspective, 1 = ortho
 
+    glm::ivec2 mouseNow = glm::ivec2(0);
+
+    uint32_t mouseButtons = SDL_GetMouseState(&mouseNow.x, &mouseNow.y);
+
+    glm::ivec2 mouseLast = mouseNow;
+
+    SDL_SetRelativeMouseMode(SDL_TRUE);
+
+    bool mouse_first_pass = true;
+
     // 3. Main Loop
     bool running = true;
     while (running)
@@ -268,6 +284,7 @@ int main(int argc, char* argv[])
         now = (float)SDL_GetTicks64();
         float cameraSpeed = 0.01f;
         float deltaTime = now - last;
+
 
         direction.x = 0;
         direction.y = 0;
@@ -396,10 +413,31 @@ int main(int argc, char* argv[])
             direction.x += 1.0;
         }
 
-        // std::cout << "DIR := {" << direction.x << "," << direction.y << "}" << std::endl;
+        mouseButtons = SDL_GetRelativeMouseState(&mouseNow.x, &mouseNow.y);
+
+        cam.yaw += (float)mouseNow.x * g_settings.sensitivity;      // * deltaTime;
+        cam.pitch -= (float)mouseNow.y * g_settings.sensitivity;    // * deltaTime;w
+
+        if (60.0f < cam.pitch)
+        {
+            cam.pitch = 60.0f;
+        }
+        if (-60.0f > cam.pitch)
+        {
+            cam.pitch = -60.0f;
+        }
+
+        cam.direction.x = glm::cos(glm::radians(cam.yaw)) * glm::cos(glm::radians(cam.pitch));
+        cam.direction.y = glm::sin(glm::radians(cam.pitch));
+        cam.direction.z = glm::sin(glm::radians(cam.yaw)) * glm::cos(glm::radians(cam.pitch));
+
+        cam.front = glm::normalize(cam.direction);
+
+        //std::cout << "Mouse := {" << mouseNow.x << "," << mouseNow.y << "}; Buttons := " << mouseButtons << std::endl;
 
         position.x += direction.x * (now - last)/1000 * 0.5f;
         position.y += direction.y * (now - last)/1000 * 0.5f;
+
         // std::cout << "POS := {" << position.x << "," << position.y << "}" << std::endl;
 
 
@@ -426,7 +464,6 @@ int main(int argc, char* argv[])
                 project = glm::ortho(0.0f, g_settings.width, 0.0f, g_settings.height, -100.0f, 100.0f);
             }
         */
-
 
         view = glm::lookAt(cam.position, cam.position + cam.front, cam.up);
 
