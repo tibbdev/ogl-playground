@@ -17,11 +17,20 @@
 
 constexpr float floor_x = 16;
 constexpr float floor_y = 64;
+constexpr float DEFAULT_WINDOW_H = 600.0f;
+constexpr float DEFAULT_WINDOW_W = 800.0f;
+
+struct Camera
+{
+    glm::vec3 position  = glm::vec3(0.0f, 0.0f, 5.0f);
+    glm::vec3 front     = glm::vec3(0.0f, 0.0f, -1.0f); 
+    glm::vec3 up        = glm::vec3(0.0f, 1.0f, 0.0f);
+};
 
 struct Settings
 {
-    float height = 600.0f;
-    float width = 800.0f;
+    float height = DEFAULT_WINDOW_H;
+    float width = DEFAULT_WINDOW_W;
     std::string title = "Modern OpenGL :: LearnOpenGL - Coordinate Systems...";
 
     float fov = 45.0f;
@@ -241,18 +250,28 @@ int main(int argc, char* argv[])
     };
 
     glm::fvec2 direction = glm::fvec2(0.0f, 0.0f);
-    float last = (float)SDL_GetTicks64();
-    // note that we're translating the scene in the reverse direction of where we want to move
 
+    float now = (float)SDL_GetTicks64();
+    float last = now;
+    float radius = 5.0f;
+
+    glm::mat4 view;
+
+    Camera cam;   
+
+    uint8_t project_select = 0; // 0 == perspective, 1 = ortho
 
     // 3. Main Loop
     bool running = true;
     while (running)
     {
+        now = (float)SDL_GetTicks64();
+        float cameraSpeed = 0.01f;
+        float deltaTime = now - last;
+
         direction.x = 0;
         direction.y = 0;
 
-        float now = (float)SDL_GetTicks64();
         mix_factor = 0.5f * (1.0f + glm::cos(now / 2000));
 
         SDL_Event e;
@@ -295,6 +314,14 @@ int main(int argc, char* argv[])
                 case SDLK_SPACE:
                     position.x = 0.0f;
                     position.y = 0.0f;
+                    break;
+
+                case SDLK_p:
+                    project_select = 0;
+                    break;
+
+                case SDLK_o:
+                    project_select = 1;
                     break;
 
                 default:
@@ -350,18 +377,22 @@ int main(int argc, char* argv[])
 
         if(mv_keys[0])
         {
+            cam.position += cameraSpeed * deltaTime * cam.front;
             direction.y += 1.0;
         }
         if(mv_keys[1])
         {
+            cam.position -= cameraSpeed * deltaTime * cam.front;
             direction.y -= 1.0;
         }
-        if(mv_keys[2])
+        if(mv_keys[2]) // Strafe Left
         {
+            cam.position -= glm::normalize(glm::cross(cam.front, cam.up)) * cameraSpeed * deltaTime;
             direction.x -= 1.0;
         }
-        if(mv_keys[3])
+        if(mv_keys[3]) // Strafe Right
         {
+            cam.position += glm::normalize(glm::cross(cam.front, cam.up)) * cameraSpeed * deltaTime;
             direction.x += 1.0;
         }
 
@@ -370,6 +401,7 @@ int main(int argc, char* argv[])
         position.x += direction.x * (now - last)/1000 * 0.5f;
         position.y += direction.y * (now - last)/1000 * 0.5f;
         // std::cout << "POS := {" << position.x << "," << position.y << "}" << std::endl;
+
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -381,10 +413,22 @@ int main(int argc, char* argv[])
         glBindTexture(GL_TEXTURE_2D, paletteID);
 
         // setup a projection matrix
-        glm::mat4 project = glm::perspective(glm::radians(g_settings.fov), g_settings.width / g_settings.height, 0.1f, 100.0f); 
+        glm::mat4 project;
+        project = glm::perspective(glm::radians(g_settings.fov), g_settings.width / g_settings.height, 0.1f, 100.0f);
 
-        glm::mat4 view = glm::mat4(1.0f);
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+        /*
+            if(0 == project_select)
+            {
+                project = glm::perspective(glm::radians(g_settings.fov), g_settings.width / g_settings.height, 0.1f, 100.0f);
+            }
+            else
+            {
+                project = glm::ortho(0.0f, g_settings.width, 0.0f, g_settings.height, -100.0f, 100.0f);
+            }
+        */
+
+
+        view = glm::lookAt(cam.position, cam.position + cam.front, cam.up);
 
         // Send it to the shader
         myshader.setMat4("view", view);
