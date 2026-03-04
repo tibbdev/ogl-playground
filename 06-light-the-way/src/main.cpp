@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
     SDL_Init(SDL_INIT_VIDEO);
 
     // Request OpenGL 4.3 Core Profile
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
@@ -432,6 +432,7 @@ int main(int argc, char* argv[])
         lightingShader.setMat4("projection", project);
         lightingShader.setVec3("lightColour", glm::vec3(1.0f, 1.0f, 1.0f));
         lightingShader.setVec3("lightPos", glm::vec3(lightPosition));
+        lightingShader.setVec3("viewPos", g_settings.cam.position);
 
         glBindVertexArray(my3dmodel.vao);
 
