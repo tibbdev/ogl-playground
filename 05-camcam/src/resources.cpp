@@ -9,14 +9,10 @@
 
 void resources_init(const char* argv0) 
 {
-    std::cout << "Initialising Resources..." << std::endl;
     if (!PHYSFS_init(argv0)) 
     {
         std::cout << "PhysFS Error: " << PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()) << std::endl;
     }
-
-    std::cout << "argv[0] := " << argv0 << std::endl;
-
 
     // PhysFS directories
     if (!PHYSFS_mount(argv0, "/", 1))
@@ -30,12 +26,7 @@ void resources_init(const char* argv0)
     PHYSFS_mount("./assets", "assets", 1);
 
     char** rc = PHYSFS_enumerateFiles("/");
-    for (char** filename = rc; *filename != NULL; filename++) {
-        std::cout << "PhysFS sees: [" << *filename << "]" << std::endl;
-    }
     PHYSFS_freeList(rc);
-
-    std::cout << "...done." << std::endl;
 }
 
 std::string resources_load_file_to_string(const std::string& filename) {

@@ -16,10 +16,10 @@
 #include "resources.h"
 #include "stb_image.h"
 
-constexpr float floor_x = 16;
-constexpr float floor_y = 64;
-constexpr float DEFAULT_WINDOW_H = 600.0f;
-constexpr float DEFAULT_WINDOW_W = 800.0f;
+constexpr float floor_x = 128;
+constexpr float floor_y = 128;
+constexpr float DEFAULT_WINDOW_H = 1080.0f;
+constexpr float DEFAULT_WINDOW_W = 1920.0f;
 constexpr float DEFAULT_MOUSE_SENSITIVITY = 0.01f;
 
 struct Settings
@@ -35,17 +35,14 @@ struct Settings
 
 Settings g_settings;
 
-uint32_t bind_gltf_model(ModelData& mdata)
+static uint32_t bind_gltf_model(ModelData& mdata)
 {
     if (mdata.model.meshes.empty())
     {
         std::cout << "bind_gltf_model :: Model is Empty, nothing to bind..." << std::endl;
         return -1;
     }
-    else
-    {
-        std::cout << "bind_gltf_model :: Model contains " << mdata.model.meshes.size() << " meshes." << std::endl;
-    }
+
     if (mdata.model.meshes.front().primitives.empty())
     {
         std::cout << "bind_gltf_model :: Mesh-0 primitives is Empty, nothing to bind..." << std::endl;
@@ -67,7 +64,7 @@ uint32_t bind_gltf_model(ModelData& mdata)
         const tinygltf::BufferView& buffView    = mdata.model.bufferViews[accessor.bufferView];
         const tinygltf::Buffer& buff            = mdata.model.buffers[buffView.buffer];
 
-        std::cout << "Processing attrib : " << attrib.first << std::endl;
+        // std::cout << "Processing attrib : " << attrib.first << std::endl;
 
         glGenBuffers(1, &mdata.vbo);              // Create Vertex Buffer
         glBindBuffer(GL_ARRAY_BUFFER, mdata.vbo); // Bind the buffer
@@ -124,7 +121,7 @@ int main(int argc, char* argv[])
     SDL_Init(SDL_INIT_VIDEO);
 
     // Request OpenGL 3.3 Core Profile
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
@@ -274,7 +271,7 @@ int main(int argc, char* argv[])
         direction.x = 0;
         direction.y = 0;
 
-        mix_factor = 0.5f * (1.0f + glm::cos(now / 2000));
+        mix_factor = 0.5f * (1.0f + glm::cos(now / 1000));
 
         SDL_Event e;
         while (SDL_PollEvent(&e))
@@ -411,7 +408,7 @@ int main(int argc, char* argv[])
 
         mouseButtons = SDL_GetRelativeMouseState(&mouseNow.x, &mouseNow.y);
 
-        glClearColor(0.1f, 0.05f, 0.15f, 1.0f);
+        glClearColor(0.1f, 0.05f, 0.15f * mix_factor, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Bind textures to texture units
@@ -428,7 +425,6 @@ int main(int argc, char* argv[])
         // Send it to the shader
         myshader.setMat4("view", view);
         myshader.setMat4("projection", project);
-        myshader.setFloat("factor", 0.0);
 
         glBindVertexArray(my3dmodel.vao);
 
