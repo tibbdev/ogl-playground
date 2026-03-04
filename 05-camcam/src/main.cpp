@@ -21,19 +21,40 @@ constexpr float floor_y = 128;
 constexpr float DEFAULT_WINDOW_H = 1080.0f;
 constexpr float DEFAULT_WINDOW_W = 1920.0f;
 constexpr float DEFAULT_MOUSE_SENSITIVITY = 0.01f;
+constexpr glm::vec3 cubePositions[] =
+{
+    glm::vec3(0.0f,  0.0f,  0.0f),
+    glm::vec3(2.0f,  5.0f, -15.0f),
+    glm::vec3(-1.5f, -2.2f, -2.5f),
+    glm::vec3(-3.8f, -2.0f, -12.3f),
+    glm::vec3(2.4f, -0.4f, -3.5f),
+    glm::vec3(-1.7f,  3.0f, -7.5f),
+    glm::vec3(1.3f, -2.0f, -2.5f),
+    glm::vec3(1.5f,  2.0f, -2.5f),
+    glm::vec3(1.5f,  0.2f, -1.5f),
+    glm::vec3(-1.3f,  1.0f, -1.5f)
+};
+constexpr float cubeScales[] =
+{
+    0.18f, 0.5f, 0.25f, 0.4f, 0.6f, 0.3f, 0.2f, 0.15f, 0.45f, 0.33f
+};
 
 struct Settings
 {
     float height = DEFAULT_WINDOW_H;
     float width = DEFAULT_WINDOW_W;
-    std::string title = "Modern OpenGL :: LearnOpenGL - Coordinate Systems...";
+    std::string title = "Modern OpenGL :: LearnOpenGL - Cameras...";
 
     float fov = 45.0f;
     float sensitivity = DEFAULT_MOUSE_SENSITIVITY;
     Camera cam;
 };
 
+glm::vec3 cubedfloor[(uint16_t)(floor_x * floor_y)];
+
 Settings g_settings;
+
+glm::fvec2 direction = glm::fvec2(0.0f, 0.0f);
 
 static uint32_t bind_gltf_model(ModelData& mdata)
 {
@@ -120,7 +141,7 @@ int main(int argc, char* argv[])
 {
     SDL_Init(SDL_INIT_VIDEO);
 
-    // Request OpenGL 3.3 Core Profile
+    // Request OpenGL 4.3 Core Profile
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -196,25 +217,6 @@ int main(int argc, char* argv[])
     // free the image data now we've loaded it!
     stbi_image_free(mypalette.pixels);
 
-    glm::vec3 cubePositions[] = 
-    {
-        glm::vec3(0.0f,  0.0f,  0.0f),
-        glm::vec3(2.0f,  5.0f, -15.0f),
-        glm::vec3(-1.5f, -2.2f, -2.5f),
-        glm::vec3(-3.8f, -2.0f, -12.3f),
-        glm::vec3(2.4f, -0.4f, -3.5f),
-        glm::vec3(-1.7f,  3.0f, -7.5f),
-        glm::vec3(1.3f, -2.0f, -2.5f),
-        glm::vec3(1.5f,  2.0f, -2.5f),
-        glm::vec3(1.5f,  0.2f, -1.5f),
-        glm::vec3(-1.3f,  1.0f, -1.5f)
-    };
-    float cubeScales[] =
-    {
-        0.18f, 0.5f, 0.25f, 0.4f, 0.6f, 0.3f, 0.2f, 0.15f, 0.45f, 0.33f
-    };
-
-    glm::vec3 cubedfloor[(uint16_t)(floor_x * floor_y)];
     for (float y = 0; floor_y > y; y += 1.0f)
     {
         for (float x = 0; floor_x > x; x += 1.0f)
@@ -241,8 +243,6 @@ int main(int argc, char* argv[])
         false,  // Left
         false   // right
     };
-
-    glm::fvec2 direction = glm::fvec2(0.0f, 0.0f);
 
     float now = (float)SDL_GetTicks64();
     float last = now;
