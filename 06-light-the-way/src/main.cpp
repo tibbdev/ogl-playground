@@ -38,12 +38,13 @@ constexpr float cubeScales[] =
 {
     0.18f, 0.5f, 0.25f, 0.4f, 0.6f, 0.3f, 0.2f, 0.15f, 0.45f, 0.33f
 };
+constexpr glm::vec3 lightPosition = glm::vec3(4.0f, 1.5f, 3.4f);
 
 struct Settings
 {
     float height = DEFAULT_WINDOW_H;
     float width = DEFAULT_WINDOW_W;
-    std::string title = "Modern OpenGL :: LearnOpenGL - Cameras...";
+    std::string title = "Modern OpenGL :: LearnOpenGL - Lighting...";
 
     float fov = 45.0f;
     float sensitivity = DEFAULT_MOUSE_SENSITIVITY;
@@ -142,7 +143,7 @@ int main(int argc, char* argv[])
     SDL_Init(SDL_INIT_VIDEO);
 
     // Request OpenGL 4.3 Core Profile
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
@@ -172,7 +173,10 @@ int main(int argc, char* argv[])
     }
 
     // 2. Compile Shaders
-    Shader myshader = Shader("shaders/vert-model.glsl", "shaders/frag-shader.glsl");
+    Shader lightingShader       = Shader("shaders/vert-model.glsl", "shaders/frag-lighting.glsl");
+    Shader lightSourceShader    = Shader("shaders/vert-model.glsl", "shaders/frag-light.glsl");
+    Shader colourShader         = Shader("shaders/vert-model.glsl", "shaders/frag-colour.glsl");
+
     ImageData mytextureimage = resources_load_image("assets/palettes/sunset-red-8x.png");
     //ImageData mytextureimage = resources_load_image("assets/palettes/shoshone-5-8x.png");
         
@@ -229,10 +233,6 @@ int main(int argc, char* argv[])
             );
         }
     }
-
-    myshader.use();
-    glUniform1i(glGetUniformLocation(myshader.ID, "tex1"), 0);
-    myshader.setInt("tex2", 1);
 
     float mix_factor = 1.0f;
 
@@ -422,9 +422,15 @@ int main(int argc, char* argv[])
 
         view = g_settings.cam.update(deltaTime, direction, mouseNow, cameraSpeed, g_settings.sensitivity, 0.0f);
 
+
+        lightingShader.use();
+        lightingShader.setInt("tex1", 0);
+        lightingShader.setInt("tex2", 1);
+
         // Send it to the shader
-        myshader.setMat4("view", view);
-        myshader.setMat4("projection", project);
+        lightingShader.setMat4("view", view);
+        lightingShader.setMat4("projection", project);
+        lightingShader.setVec3("lightColour", glm::vec3(1.0f, 1.0f, 1.0f));
 
         glBindVertexArray(my3dmodel.vao);
 
@@ -451,7 +457,7 @@ int main(int argc, char* argv[])
                 model = glm::rotate(model, glm::radians(now / 1000.0f), glm::vec3(0.5f, 0.5f, 1.0f));
             }
 
-            myshader.setMat4("model", model);
+            lightingShader.setMat4("model", model);
 
             glDrawElements(GL_TRIANGLES, my3dmodel.indx_cnt, my3dmodel.type, 0);
         }
@@ -465,10 +471,25 @@ int main(int argc, char* argv[])
             model = glm::translate(model, cubedfloor[idx]);
             model = glm::scale(model, glm::vec3(0.1f));
 
-            myshader.setMat4("model", model);
+            lightingShader.setMat4("model", model);
 
             glDrawElements(GL_TRIANGLES, basicCube.indx_cnt, basicCube.type, 0);
         }
+
+        lightSourceShader.use();
+        
+        // Set up the view and projection matricies for the light source
+        lightSourceShader.setMat4("view", view);
+        lightSourceShader.setMat4("projection", project);
+
+        // Setup a transformation matrix
+        glm::mat4 model = glm::mat4(1.0f); // 4x4 identity matrix
+        model = glm::translate(model, lightPosition);
+        model = glm::scale(model, glm::vec3(0.1f));
+
+        lightSourceShader.setMat4("model", model);
+
+        glDrawElements(GL_TRIANGLES, basicCube.indx_cnt, basicCube.type, 0);
 
         SDL_GL_SwapWindow(window);
         last = now;
