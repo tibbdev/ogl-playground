@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "mad_shader.h"
+#include "mad_camera.h"
 #include "resources.h"
 #include "stb_image.h"
 
@@ -19,18 +20,7 @@ constexpr float floor_x = 16;
 constexpr float floor_y = 64;
 constexpr float DEFAULT_WINDOW_H = 600.0f;
 constexpr float DEFAULT_WINDOW_W = 800.0f;
-constexpr float DEFAULT_MOUSE_SENSITIVITY = 0.05f;
-
-struct Camera
-{
-    glm::vec3 position  = glm::vec3(0.0f, 0.0f, 5.0f);
-    glm::vec3 front     = glm::vec3(0.0f, 0.0f, -1.0f); 
-    glm::vec3 up        = glm::vec3(0.0f, 1.0f, 0.0f);
-    float     yaw       = 0.0f;
-    float     pitch     = 0.0f;
-    float     roll      = 0.0f;
-    glm::vec3 direction = glm::vec3(0.0f, 0.0f, 0.0f);
-};
+constexpr float DEFAULT_MOUSE_SENSITIVITY = 0.01f;
 
 struct Settings
 {
@@ -40,6 +30,7 @@ struct Settings
 
     float fov = 45.0f;
     float sensitivity = DEFAULT_MOUSE_SENSITIVITY;
+    Camera cam;
 };
 
 Settings g_settings;
@@ -246,7 +237,6 @@ int main(int argc, char* argv[])
 
     float mix_factor = 1.0f;
 
-    glm::fvec2 position = glm::fvec2(0.0f, 0.0f);
     bool mv_keys[4] =
     {
         false,  // up
@@ -263,19 +253,15 @@ int main(int argc, char* argv[])
 
     glm::mat4 view;
 
-    Camera cam;   
-
     uint8_t project_select = 0; // 0 == perspective, 1 = ortho
 
     glm::ivec2 mouseNow = glm::ivec2(0);
 
     uint32_t mouseButtons = SDL_GetMouseState(&mouseNow.x, &mouseNow.y);
 
-    glm::ivec2 mouseLast = mouseNow;
-
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
-    bool mouse_first_pass = true;
+    bool crouching = false;
 
     // 3. Main Loop
     bool running = true;
@@ -284,7 +270,6 @@ int main(int argc, char* argv[])
         now = (float)SDL_GetTicks64();
         float cameraSpeed = 0.01f;
         float deltaTime = now - last;
-
 
         direction.x = 0;
         direction.y = 0;
@@ -329,8 +314,8 @@ int main(int argc, char* argv[])
                     break;
 
                 case SDLK_SPACE:
-                    position.x = 0.0f;
-                    position.y = 0.0f;
+                    g_settings.cam.position.x = 0.0f;
+                    g_settings.cam.position.z = 0.0f;
                     break;
 
                 case SDLK_p:
@@ -339,6 +324,17 @@ int main(int argc, char* argv[])
 
                 case SDLK_o:
                     project_select = 1;
+                    break;
+
+                case SDLK_LCTRL:
+                    crouching = true;
+                    break;
+
+                case SDLK_1:
+                    g_settings.cam.type = CameraType::BasicFly;
+                    break;
+                case SDLK_2:
+                    g_settings.cam.type = CameraType::FPS;
                     break;
 
                 default:
@@ -365,6 +361,10 @@ int main(int argc, char* argv[])
                 case SDLK_d:
                 case SDLK_RIGHT:
                     mv_keys[3] = false;
+                    break;
+
+                case SDLK_LCTRL:
+                    crouching = false;
                     break;
 
                 default:
@@ -394,54 +394,24 @@ int main(int argc, char* argv[])
 
         if(mv_keys[0])
         {
-            cam.position += cameraSpeed * deltaTime * cam.front;
             direction.y += 1.0;
         }
         if(mv_keys[1])
         {
-            cam.position -= cameraSpeed * deltaTime * cam.front;
             direction.y -= 1.0;
         }
         if(mv_keys[2]) // Strafe Left
         {
-            cam.position -= glm::normalize(glm::cross(cam.front, cam.up)) * cameraSpeed * deltaTime;
             direction.x -= 1.0;
         }
         if(mv_keys[3]) // Strafe Right
         {
-            cam.position += glm::normalize(glm::cross(cam.front, cam.up)) * cameraSpeed * deltaTime;
             direction.x += 1.0;
         }
 
         mouseButtons = SDL_GetRelativeMouseState(&mouseNow.x, &mouseNow.y);
 
-        cam.yaw += (float)mouseNow.x * g_settings.sensitivity;      // * deltaTime;
-        cam.pitch -= (float)mouseNow.y * g_settings.sensitivity;    // * deltaTime;w
-
-        if (60.0f < cam.pitch)
-        {
-            cam.pitch = 60.0f;
-        }
-        if (-60.0f > cam.pitch)
-        {
-            cam.pitch = -60.0f;
-        }
-
-        cam.direction.x = glm::cos(glm::radians(cam.yaw)) * glm::cos(glm::radians(cam.pitch));
-        cam.direction.y = glm::sin(glm::radians(cam.pitch));
-        cam.direction.z = glm::sin(glm::radians(cam.yaw)) * glm::cos(glm::radians(cam.pitch));
-
-        cam.front = glm::normalize(cam.direction);
-
-        //std::cout << "Mouse := {" << mouseNow.x << "," << mouseNow.y << "}; Buttons := " << mouseButtons << std::endl;
-
-        position.x += direction.x * (now - last)/1000 * 0.5f;
-        position.y += direction.y * (now - last)/1000 * 0.5f;
-
-        // std::cout << "POS := {" << position.x << "," << position.y << "}" << std::endl;
-
-
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.1f, 0.05f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Bind textures to texture units
@@ -451,21 +421,9 @@ int main(int argc, char* argv[])
         glBindTexture(GL_TEXTURE_2D, paletteID);
 
         // setup a projection matrix
-        glm::mat4 project;
-        project = glm::perspective(glm::radians(g_settings.fov), g_settings.width / g_settings.height, 0.1f, 100.0f);
+        glm::mat4 project = glm::perspective(glm::radians(g_settings.fov), g_settings.width / g_settings.height, 0.1f, 100.0f);
 
-        /*
-            if(0 == project_select)
-            {
-                project = glm::perspective(glm::radians(g_settings.fov), g_settings.width / g_settings.height, 0.1f, 100.0f);
-            }
-            else
-            {
-                project = glm::ortho(0.0f, g_settings.width, 0.0f, g_settings.height, -100.0f, 100.0f);
-            }
-        */
-
-        view = glm::lookAt(cam.position, cam.position + cam.front, cam.up);
+        view = g_settings.cam.update(deltaTime, direction, mouseNow, cameraSpeed, g_settings.sensitivity, 0.0f);
 
         // Send it to the shader
         myshader.setMat4("view", view);
