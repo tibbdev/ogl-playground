@@ -38,7 +38,7 @@ constexpr float cubeScales[] =
 {
     0.18f, 0.5f, 0.25f, 0.4f, 0.6f, 0.3f, 0.2f, 0.15f, 0.45f, 0.33f
 };
-constexpr glm::vec3 lightPosition = glm::vec3(2.4f, 1.5f, 5.0f);
+constexpr glm::vec3 DEFAULT_LIGHT_POSITION = glm::vec3(2.4, 0.5f, 1.8f);
 
 struct Settings
 {
@@ -46,9 +46,10 @@ struct Settings
     float width = DEFAULT_WINDOW_W;
     std::string title = "Modern OpenGL :: LearnOpenGL - Lighting...";
 
-    float fov = 45.0f;
+    float fov = 55.0f;
     float sensitivity = DEFAULT_MOUSE_SENSITIVITY;
     Camera cam;
+    glm::vec3 lightPosition = DEFAULT_LIGHT_POSITION;
 };
 
 glm::vec3 cubedfloor[(uint16_t)(floor_x * floor_y)];
@@ -422,6 +423,9 @@ int main(int argc, char* argv[])
 
         view = g_settings.cam.update(deltaTime, direction, mouseNow, cameraSpeed, g_settings.sensitivity, 0.0f);
 
+        g_settings.lightPosition.x = glm::sin(glm::radians(now/500)) * DEFAULT_LIGHT_POSITION.x;
+        g_settings.lightPosition.y = DEFAULT_LIGHT_POSITION.y;
+        g_settings.lightPosition.z = glm::cos(glm::radians(now/500)) * DEFAULT_LIGHT_POSITION.z;
 
         lightingShader.use();
         lightingShader.setInt("tex1", 0);
@@ -431,7 +435,7 @@ int main(int argc, char* argv[])
         lightingShader.setMat4("view", view);
         lightingShader.setMat4("projection", project);
         lightingShader.setVec3("lightColour", glm::vec3(1.0f, 1.0f, 1.0f));
-        lightingShader.setVec3("lightPos", glm::vec3(lightPosition));
+        lightingShader.setVec3("lightPos", g_settings.lightPosition);
         lightingShader.setVec3("viewPos", g_settings.cam.position);
 
         glBindVertexArray(my3dmodel.vao);
@@ -486,8 +490,9 @@ int main(int argc, char* argv[])
 
         // Setup a transformation matrix
         glm::mat4 model = glm::mat4(1.0f); // 4x4 identity matrix
-        model = glm::translate(model, lightPosition);
+        model = glm::translate(model, g_settings.lightPosition);
         model = glm::scale(model, glm::vec3(0.1f));
+        //model = glm::lookAt(g_settings.lightPosition, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
         lightSourceShader.setMat4("model", model);
 

@@ -16,12 +16,13 @@ struct ImageData
 
 struct ModelData
 {
-	tinygltf::Model model;
-	uint32_t		vao;
-	uint32_t		vbo;
-	uint32_t		ebo;
-	uint32_t		indx_cnt = 0;
-	uint32_t		type = 0;
+	tinygltf::Model		model;
+	//tinygltf::Material	material;
+	uint32_t			vao;
+	uint32_t			vbo;
+	uint32_t			ebo;
+	uint32_t			indx_cnt = 0;
+	uint32_t			type = 0;
 };
 
 void resources_init(const char* argv0);
