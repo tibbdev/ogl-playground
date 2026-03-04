@@ -38,7 +38,7 @@ constexpr float cubeScales[] =
 {
     0.18f, 0.5f, 0.25f, 0.4f, 0.6f, 0.3f, 0.2f, 0.15f, 0.45f, 0.33f
 };
-constexpr glm::vec3 lightPosition = glm::vec3(4.0f, 1.5f, 3.4f);
+constexpr glm::vec3 lightPosition = glm::vec3(2.4f, 1.5f, 5.0f);
 
 struct Settings
 {
@@ -431,6 +431,7 @@ int main(int argc, char* argv[])
         lightingShader.setMat4("view", view);
         lightingShader.setMat4("projection", project);
         lightingShader.setVec3("lightColour", glm::vec3(1.0f, 1.0f, 1.0f));
+        lightingShader.setVec3("lightPos", glm::vec3(lightPosition));
 
         glBindVertexArray(my3dmodel.vao);
 
