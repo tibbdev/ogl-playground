@@ -50,7 +50,10 @@ file(GLOB_RECURSE GRAPHICS_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR
 # endif()
 # message("Build Type : ${CMAKE_BUILD_TYPE}")
 
-add_executable(${PROJECT_NAME} ${CORE_SOURCES} ${GRAPHICS_SOURCES})
+add_executable(${PROJECT_NAME} 
+    ${CORE_SOURCES} 
+    ${GRAPHICS_SOURCES}
+)
 
 # --- 4. Compiler Settings ---
 if(MSVC)
