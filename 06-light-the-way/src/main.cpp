@@ -38,7 +38,7 @@ constexpr float cubeScales[] =
 {
     0.18f, 0.5f, 0.25f, 0.4f, 0.6f, 0.3f, 0.2f, 0.15f, 0.45f, 0.33f
 };
-constexpr glm::vec3 DEFAULT_LIGHT_POSITION = glm::vec3(2.4, 0.5f, 1.8f);
+constexpr glm::vec3 DEFAULT_LIGHT_POSITION = glm::vec3(3.2, 0.5f, 3.2f);
 
 struct Settings
 {
@@ -423,9 +423,9 @@ int main(int argc, char* argv[])
 
         view = g_settings.cam.update(deltaTime, direction, mouseNow, cameraSpeed, g_settings.sensitivity, 0.0f);
 
-        g_settings.lightPosition.x = glm::sin(glm::radians(now/500)) * DEFAULT_LIGHT_POSITION.x;
+        g_settings.lightPosition.x = glm::sin(glm::radians(now/50)) * DEFAULT_LIGHT_POSITION.x;
         g_settings.lightPosition.y = DEFAULT_LIGHT_POSITION.y;
-        g_settings.lightPosition.z = glm::cos(glm::radians(now/500)) * DEFAULT_LIGHT_POSITION.z;
+        g_settings.lightPosition.z = glm::cos(glm::radians(now/50)) * DEFAULT_LIGHT_POSITION.z;
 
         lightingShader.use();
         lightingShader.setInt("tex1", 0);
