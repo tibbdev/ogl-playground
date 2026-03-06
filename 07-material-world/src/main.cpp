@@ -285,13 +285,29 @@ int main(int argc, char* argv[])
 
     SDL_GL_SetSwapInterval(0);
 
+    uint32_t fps_counter = 0;
     // 3. Main Loop
     bool running = true;
+
+    float fps_start = (float)SDL_GetTicks64();
     while (running)
     {
-        now = (float)SDL_GetTicks64();
+        fps_counter++;
+
+        do
+        {
+            now = (float)SDL_GetTicks64();
+        } while (now == last);
         float cameraSpeed = 0.01f;
+
         float deltaTime = now - last;
+
+        if (1000.0f < (now - fps_start))
+        {
+            std::cout << "FPS := " << fps_counter << std::endl;
+            fps_start = now;
+            fps_counter = 0;
+        }
 
         direction.x = 0;
         direction.y = 0;
