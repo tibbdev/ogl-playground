@@ -832,7 +832,6 @@ int main(int argc, char* argv[])
             glDeleteTextures(1, &textTexture);
         }
 
-
         SDL_GL_SwapWindow(window);
         last = now;
     }
