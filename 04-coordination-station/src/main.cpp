@@ -216,7 +216,12 @@ int main(int argc, char* argv[])
     {
         for (float x = 0; floor_x > x; x += 1.0f)
         {
-            cubedfloor[(uint16_t)(x + y * floor_x)] = glm::vec3((x - (floor_x * 0.5f)) * 0.5f, -2.0f, 0.5f * (y - floor_y * 0.5f));
+            cubedfloor[(uint16_t)(x + y * floor_x)] = 
+            glm::vec3(
+                (x - (floor_x * 0.5f)) * 0.5f, 
+                -3.5f, 
+                0.5f * (y - floor_y * 0.5f)
+            );
         }
     }
 
