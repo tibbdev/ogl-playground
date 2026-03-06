@@ -786,8 +786,6 @@ int main(int argc, char* argv[])
             GLuint textTexture = surfaceToTexture(textSurface);
 
             // Calculate how wide the quad should be to keep the font looking natural
-            // We base it on the height (0.1f) and the surface's aspect ratio
-            float aspectRatio = (float)textSurface->w / (float)textSurface->h;
             float quadWidth = (float)textSurface->w / g_settings.width;
             float topEdge = 0.98f;
             float bottomEdge = topEdge - ((float)textSurface->h / g_settings.height);
