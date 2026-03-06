@@ -261,6 +261,8 @@ int main(int argc, char* argv[])
 
     bool crouching = false;
 
+    SDL_GL_SetSwapInterval(0);
+
     // 3. Main Loop
     bool running = true;
     while (running)
@@ -423,9 +425,9 @@ int main(int argc, char* argv[])
 
         view = g_settings.cam.update(deltaTime, direction, mouseNow, cameraSpeed, g_settings.sensitivity, 0.0f);
 
-        g_settings.lightPosition.x = glm::sin(glm::radians(now/500)) * DEFAULT_LIGHT_POSITION.x;
+        g_settings.lightPosition.x = glm::sin(glm::radians(now/50)) * DEFAULT_LIGHT_POSITION.x;
         g_settings.lightPosition.y = DEFAULT_LIGHT_POSITION.y;
-        g_settings.lightPosition.z = glm::cos(glm::radians(now/500)) * DEFAULT_LIGHT_POSITION.z;
+        g_settings.lightPosition.z = glm::cos(glm::radians(now/50)) * DEFAULT_LIGHT_POSITION.z;
 
         lightingShader.use();
         lightingShader.setInt("tex1", 0);
