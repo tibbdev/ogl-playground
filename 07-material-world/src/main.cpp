@@ -3,6 +3,7 @@
   */
 #include <GL/glew.h>
 #include <SDL.h>
+#include <SDL_ttf.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -38,7 +39,7 @@ constexpr float cubeScales[] =
 {
     0.18f, 0.5f, 0.25f, 0.4f, 0.6f, 0.3f, 0.2f, 0.15f, 0.45f, 0.33f
 };
-constexpr glm::vec3 DEFAULT_LIGHT_POSITION = glm::vec3(2.4, 0.5f, 1.8f);
+constexpr glm::vec3 DEFAULT_LIGHT_POSITION = glm::vec3(3.4, 0.5f, 4.5f);
 
 struct Settings
 {
@@ -56,6 +57,100 @@ glm::vec3 cubedfloor[(uint16_t)(floor_x * floor_y)];
 Settings g_settings;
 
 glm::fvec2 direction = glm::fvec2(0.0f, 0.0f);
+GLuint quadVAO, quadVBO;
+
+void init_ui_quad()
+{
+    // Positions (x, y) and TexCoords (u, v)
+    // We flip the V coordinate (last column) to match SDL's top-down layout
+    float vertices[] =
+    {
+        // pos            // tex (U, V)
+        0.95f,  0.95f,    1.0f, 0.0f, // Top Right    (V=0 is Top in SDL)
+        0.95f,  0.85f,    1.0f, 1.0f, // Bottom Right (V=1 is Bottom in SDL)
+        0.65f,  0.85f,    0.0f, 1.0f, // Bottom Left  (V=1 is Bottom in SDL)
+        0.65f,  0.95f,    0.0f, 0.0f  // Top Left     (V=0 is Top in SDL)
+    };
+
+    unsigned int indices[] =
+    {
+        0, 1, 3,
+        1, 2, 3
+    };
+
+    GLuint EBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(quadVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    // Position attribute (location 0)
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // Texture coord attribute (location 1)
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+void render_ui_quad(GLuint textureID)
+{
+    glDisable(GL_DEPTH_TEST); // Ensure text is always on top
+    glEnable(GL_BLEND);       // Enable transparency for blended text
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glBindVertexArray(quadVAO);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+
+    glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST); // Turn it back on for the 3D scene
+}
+GLuint surfaceToTexture(SDL_Surface* surface)
+{
+    if (!surface)
+    {
+        return 0;
+    }
+
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    // 1. Reset alignment to 1 byte (essential for text)
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    // 2. Tell OpenGL how many pixels are in a row including padding (The Pitch)
+    // SDL_Surface->pitch is the actual length of a row in bytes.
+    // We divide by bytes-per-pixel to get the 'row length' in pixels.
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, surface->pitch / surface->format->BytesPerPixel);
+
+    // 3. Upload. SDL_ttf Blended is always 32-bit. 
+    // We use GL_BGRA because SDL surface memory on Windows is often Little-Endian (ARGB -> BGRA)
+    GLenum format = (surface->format->BytesPerPixel == 4) ? GL_BGRA : GL_BGR;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->w, surface->h, 0, format, GL_UNSIGNED_BYTE, surface->pixels);
+
+    // 4. Reset ROW_LENGTH so it doesn't break your 3D textures later
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}
 
 static uint32_t bind_gltf_model(ModelData& mdata)
 {
@@ -155,6 +250,13 @@ int main(int argc, char* argv[])
 {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
 
+    if (TTF_Init() == -1) 
+    {
+        std::cout << "TTF_Init Error: " << TTF_GetError() << std::endl;
+    }
+
+    TTF_Font* font = TTF_OpenFont("assets/fonts/Quantico/Quantico-Bold.ttf", 24);
+
     // Request OpenGL 4.3 Core Profile
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -162,8 +264,6 @@ int main(int argc, char* argv[])
 
     SDL_Window* window = SDL_CreateWindow(g_settings.title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, g_settings.width, g_settings.height, SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN_DESKTOP);
     SDL_GLContext context = SDL_GL_CreateContext(window);
-
-    
 
     glewExperimental = GL_TRUE;
     glewInit();
@@ -187,10 +287,13 @@ int main(int argc, char* argv[])
         return model_bind_result;
     }
 
+    init_ui_quad();
+
     // 2. Compile Shaders
     Shader lightingShader       = Shader("shaders/vert-model.glsl", "shaders/frag-lighting.glsl");
     Shader lightSourceShader    = Shader("shaders/vert-model.glsl", "shaders/frag-light.glsl");
     Shader colourShader         = Shader("shaders/vert-model.glsl", "shaders/frag-colour.glsl");
+    Shader uiShader             = Shader("shaders/vert-ui.glsl", "shaders/frag-ui.glsl");
 
     ImageData mytextureimage = resources_load_image("assets/palettes/sunset-red-8x.png");
     //ImageData mytextureimage = resources_load_image("assets/palettes/shoshone-5-8x.png");
@@ -286,6 +389,7 @@ int main(int argc, char* argv[])
     SDL_GL_SetSwapInterval(0);
 
     uint32_t fps_counter = 0;
+    uint32_t fps = 0;
     // 3. Main Loop
     bool running = true;
 
@@ -304,10 +408,11 @@ int main(int argc, char* argv[])
 
         if (1000.0f < (now - fps_start))
         {
-            std::cout << "FPS := " << fps_counter << std::endl;
             fps_start = now;
+            fps = fps_counter;
             fps_counter = 0;
         }
+        std::string fpsText = "FPS: " + std::to_string(fps);
 
         direction.x = 0;
         direction.y = 0;
@@ -435,6 +540,7 @@ int main(int argc, char* argv[])
                     controller = SDL_GameControllerOpen(e.cdevice.which);
                 }
             }
+            
             if (e.type == SDL_CONTROLLERDEVICEREMOVED)
             {
                 if (controller && e.cdevice.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(controller))) 
@@ -481,6 +587,7 @@ int main(int argc, char* argv[])
                         break;
                 }
             }
+            
             if (e.type == SDL_CONTROLLERBUTTONUP)
             {
                 switch (e.cbutton.button)
@@ -568,7 +675,6 @@ int main(int argc, char* argv[])
             }
         }
 
-
         if (CameraType::FPS == g_settings.cam.type)
         {
             float target_y = -0.8f;
@@ -598,9 +704,9 @@ int main(int argc, char* argv[])
 
         view = g_settings.cam.update(deltaTime, direction, mouseNow, cameraSpeed, g_settings.sensitivity, 0.0f);
 
-        g_settings.lightPosition.x = glm::sin(glm::radians(now/50)) * DEFAULT_LIGHT_POSITION.x;
-        g_settings.lightPosition.y = DEFAULT_LIGHT_POSITION.y;
-        g_settings.lightPosition.z = glm::cos(glm::radians(now/50)) * DEFAULT_LIGHT_POSITION.z;
+        g_settings.lightPosition.x = glm::sin(glm::radians(now/20)) * DEFAULT_LIGHT_POSITION.x;
+        g_settings.lightPosition.y = DEFAULT_LIGHT_POSITION.y * (1 + glm::sin(glm::radians(now / 10)));
+        g_settings.lightPosition.z = glm::cos(glm::radians(now/20)) * DEFAULT_LIGHT_POSITION.z;
 
         lightingShader.use();
         lightingShader.setInt("tex1", 0);
@@ -672,6 +778,41 @@ int main(int argc, char* argv[])
         lightSourceShader.setMat4("model", model);
 
         glDrawElements(GL_TRIANGLES, basicCube.indx_cnt, basicCube.type, 0);
+
+        SDL_Color white = { 255, 255, 255, 255 };
+        SDL_Surface* textSurface = TTF_RenderText_Blended(font, fpsText.c_str(), white);
+        if (textSurface)
+        {
+            GLuint textTexture = surfaceToTexture(textSurface);
+
+            uiShader.use();
+            // Set the sampler to use texture unit 0
+            uiShader.setInt("textTexture", 0);
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textTexture);
+
+            //render_ui_quad(textTexture);
+
+            glDisable(GL_DEPTH_TEST);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            uiShader.use();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textTexture);
+            uiShader.setInt("textTexture", 0);
+
+            glBindVertexArray(quadVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            glDisable(GL_BLEND);
+            glEnable(GL_DEPTH_TEST);
+
+            SDL_FreeSurface(textSurface);
+            glDeleteTextures(1, &textTexture);
+        }
+
 
         SDL_GL_SwapWindow(window);
         last = now;
