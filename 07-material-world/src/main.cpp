@@ -785,6 +785,27 @@ int main(int argc, char* argv[])
         {
             GLuint textTexture = surfaceToTexture(textSurface);
 
+            // Calculate how wide the quad should be to keep the font looking natural
+            // We base it on the height (0.1f) and the surface's aspect ratio
+            float aspectRatio = (float)textSurface->w / (float)textSurface->h;
+            float quadWidth = (float)textSurface->w / g_settings.width;
+            float topEdge = 0.98f;
+            float bottomEdge = topEdge - ((float)textSurface->h / g_settings.height);
+            float leftEdge = 0.88f;
+            float rightEdge = leftEdge + quadWidth;
+
+            // Update the VBO with new positions, keeping UVs the same
+            float vertices[] =
+            {
+                rightEdge, topEdge, 1.0f, 0.0f,
+                rightEdge, bottomEdge, 1.0f, 1.0f,
+                leftEdge,  bottomEdge, 0.0f, 1.0f,
+                leftEdge,  topEdge, 0.0f, 0.0f
+            };
+
+            glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
             uiShader.use();
             // Set the sampler to use texture unit 0
             uiShader.setInt("textTexture", 0);
