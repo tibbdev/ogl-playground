@@ -46,7 +46,6 @@ struct Settings
     float width = DEFAULT_WINDOW_W;
     std::string title = "Modern OpenGL :: LearnOpenGL - Lighting...";
 
-    float fov = 55.0f;
     float sensitivity = DEFAULT_MOUSE_SENSITIVITY;
     Camera cam;
     glm::vec3 lightPosition = DEFAULT_LIGHT_POSITION;
@@ -139,9 +138,22 @@ static uint32_t bind_gltf_model(ModelData& mdata)
     return 0;
 }
 
+static SDL_GameController* findController() 
+{
+    for (int i = 0; i < SDL_NumJoysticks(); i++) 
+    {
+        if (SDL_IsGameController(i)) 
+        {
+            return SDL_GameControllerOpen(i);
+        }
+    }
+
+    return nullptr;
+}
+
 int main(int argc, char* argv[])
 {
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
 
     // Request OpenGL 4.3 Core Profile
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -150,6 +162,8 @@ int main(int argc, char* argv[])
 
     SDL_Window* window = SDL_CreateWindow(g_settings.title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, g_settings.width, g_settings.height, SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN_DESKTOP);
     SDL_GLContext context = SDL_GL_CreateContext(window);
+
+    
 
     glewExperimental = GL_TRUE;
     glewInit();
@@ -259,7 +273,15 @@ int main(int argc, char* argv[])
 
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
+    SDL_GameController* controller = findController();
+    if (nullptr != controller)
+    {
+        std::cout << "Controller Connected!" << std::endl;
+    }
+
     bool crouching = false;
+    bool fov_inc = false;
+    bool fov_dec = false;
 
     SDL_GL_SetSwapInterval(0);
 
@@ -310,7 +332,7 @@ int main(int argc, char* argv[])
                     break;
 
                 case SDLK_r:
-                    g_settings.fov = 45.0f;
+                    g_settings.cam.fov = 45.0f;
                     break;
 
                 case SDLK_SPACE:
@@ -376,40 +398,175 @@ int main(int argc, char* argv[])
             {
                 if (e.wheel.y > 0.1f)
                 {
-                    if (g_settings.fov < 90.0f)
+                    if (g_settings.cam.fov < 90.0f)
                     {
-                        g_settings.fov += 0.5f;
+                        g_settings.cam.fov += 0.5f;
                     }
                 }
                 else if (e.wheel.y < -0.1f)
                 {
-                    if (g_settings.fov > 5.0f)
+                    if (g_settings.cam.fov > 5.0f)
                     {
-                        g_settings.fov -= 0.5f;
+                        g_settings.cam.fov -= 0.5f;
                     }
                 }
-                //std::cout << "fov := " << g_settings.fov << std::endl;
+            }
+
+            if (e.type == SDL_CONTROLLERDEVICEADDED)
+            {
+                if (!controller) 
+                {
+                    controller = SDL_GameControllerOpen(e.cdevice.which);
+                }
+            }
+            if (e.type == SDL_CONTROLLERDEVICEREMOVED)
+            {
+                if (controller && e.cdevice.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(controller))) 
+                {
+                    SDL_GameControllerClose(controller);
+                    controller = findController();
+                }
+            }
+
+            if (e.type == SDL_CONTROLLERBUTTONDOWN)
+            {
+                switch (e.cbutton.button)
+                {
+                    case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_DPAD_UP:
+                        fov_inc = true;
+                        break;
+                    case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                        fov_dec = true;
+                        break;
+                    case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+                        g_settings.cam.type = CameraType::BasicFly;
+                        break;
+                    case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+                        g_settings.cam.type = CameraType::FPS;
+                        break;
+
+                    case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_A:
+                        crouching = !crouching;
+                        break;
+                    case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_Y:
+                        running = false;
+                        break;
+                    case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_X:
+                        g_settings.cam.fov = 50.0f;
+                        break;
+
+                    case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                        g_settings.cam.fov = 15.0f;
+                        break;
+                    case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                        g_settings.cam.fov = 69.0f;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            if (e.type == SDL_CONTROLLERBUTTONUP)
+            {
+                switch (e.cbutton.button)
+                {
+                case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_DPAD_UP:
+                    fov_inc = false;
+                    break;
+                case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+                    fov_dec = false;
+                    break;
+
+                default:
+                    break;
+                }
             }
         }
 
-        if(mv_keys[0])
+        if(!controller)
         {
-            direction.y += 1.0;
+            if (mv_keys[0])
+            {
+                direction.y += 1.0;
+            }
+            if (mv_keys[1])
+            {
+                direction.y -= 1.0;
+            }
+            if (mv_keys[2]) // Strafe Left
+            {
+                direction.x -= 1.0;
+            }
+            if (mv_keys[3]) // Strafe Right
+            {
+                direction.x += 1.0;
+            }
+
+            mouseButtons = SDL_GetRelativeMouseState(&mouseNow.x, &mouseNow.y);
         }
-        if(mv_keys[1])
+        else
         {
-            direction.y -= 1.0;
-        }
-        if(mv_keys[2]) // Strafe Left
-        {
-            direction.x -= 1.0;
-        }
-        if(mv_keys[3]) // Strafe Right
-        {
-            direction.x += 1.0;
+            direction.x = (float)SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX) / 32768;
+            direction.y = -1.0f *(float)SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY) / 32768;
+
+            if((-0.1f < direction.x) && (0.1f > direction.x))
+            {
+                direction.x = 0.0f;
+            }
+            if ((-0.1f < direction.y) && (0.1f > direction.y))
+            {
+                direction.y = 0.0f;
+            }
+
+            glm::fvec2 pitch_yaw_pad = glm::fvec2(0.0f, 0.0f);
+
+            pitch_yaw_pad.x = (float)SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTX) / 32768;
+            pitch_yaw_pad.y = (float)SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTY) / 32768;
+
+            if ((-0.1f < pitch_yaw_pad.x) && (0.1f > pitch_yaw_pad.x))
+            {
+                pitch_yaw_pad.x = 0.0f;
+            }
+            if ((-0.1f < pitch_yaw_pad.y) && (0.1f > pitch_yaw_pad.y))
+            {
+                pitch_yaw_pad.y = 0.0f;
+            }
+
+            mouseNow.x = (int)(pitch_yaw_pad.x * 100);
+            mouseNow.y = (int)(pitch_yaw_pad.y * 100);
+
+            if (fov_inc && !fov_dec)
+            {
+                g_settings.cam.fov += deltaTime * 0.1f;
+                if (g_settings.cam.fov > 90.0f)
+                {
+                    g_settings.cam.fov = 90.0f;
+                }
+            }
+            else if (fov_dec && !fov_inc)
+            {
+                g_settings.cam.fov -= deltaTime * 0.1f;
+                if (g_settings.cam.fov < 5.0f)
+                {
+                    g_settings.cam.fov = 5.0f;
+                }
+            }
         }
 
-        mouseButtons = SDL_GetRelativeMouseState(&mouseNow.x, &mouseNow.y);
+
+        if (CameraType::FPS == g_settings.cam.type)
+        {
+            float target_y = -0.8f;
+            if(crouching)
+            {
+                target_y = -2.4f;
+            }
+
+            if (g_settings.cam.position.y != target_y)
+            {
+                float err = target_y - g_settings.cam.position.y;
+                g_settings.cam.position.y += 0.05f * err;
+            }
+        }
 
         glClearColor(0.1f, 0.05f, 0.15f * mix_factor, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -421,7 +578,7 @@ int main(int argc, char* argv[])
         glBindTexture(GL_TEXTURE_2D, paletteID);
 
         // setup a projection matrix
-        glm::mat4 project = glm::perspective(glm::radians(g_settings.fov), g_settings.width / g_settings.height, 0.1f, 100.0f);
+        glm::mat4 project = glm::perspective(glm::radians(g_settings.cam.fov), g_settings.width / g_settings.height, 0.1f, 100.0f);
 
         view = g_settings.cam.update(deltaTime, direction, mouseNow, cameraSpeed, g_settings.sensitivity, 0.0f);
 
