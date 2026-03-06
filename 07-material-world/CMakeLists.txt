@@ -24,6 +24,11 @@ set(SDL2MIXER_FLAC OFF CACHE BOOL "" FORCE)
 set(SDL2MIXER_MIDI OFF CACHE BOOL "" FORCE)
 set(SDL2MIXER_MOD OFF CACHE BOOL "" FORCE)
 
+# SDL_ttf Settings
+set(SDL2TTF_VENDORED ON CACHE BOOL "" FORCE)
+set(SDL2TTF_SAMPLES OFF CACHE BOOL "" FORCE)
+set(SDL2TTF_HARFBUZZ OFF CACHE BOOL "" FORCE)
+
 # PhysFS Settings
 set(PHYSFS_BUILD_TEST OFF CACHE BOOL "" FORCE)
 set(PHYSFS_BUILD_SHARED OFF CACHE BOOL "" FORCE)
@@ -36,8 +41,9 @@ FetchContent_Declare(glew GIT_REPOSITORY https://github.com/Perlmint/glew-cmake.
 FetchContent_Declare(glm GIT_REPOSITORY https://github.com/g-truc/glm.git GIT_TAG 1.0.1)
 FetchContent_Declare(tinygltf GIT_REPOSITORY https://github.com/syoyo/tinygltf.git GIT_TAG v2.9.3)
 FetchContent_Declare(physfs GIT_REPOSITORY https://github.com/icculus/physfs.git GIT_TAG release-3.2.0)
+FetchContent_Declare(SDL_ttf GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf.git GIT_TAG release-2.22.0)
 
-FetchContent_MakeAvailable(SDL2 SDL_mixer glew glm tinygltf physfs)
+FetchContent_MakeAvailable(SDL2 SDL_mixer SDL_ttf glew glm tinygltf physfs)
 
 find_package(OpenGL REQUIRED)
 
@@ -67,6 +73,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${glew_SOURCE_DIR}/include
     ${glew_BINARY_DIR}/include
     ${sdl2_SOURCE_DIR}/include
+    ${sdl_mixer_SOURCE_DIR}/include
+    ${sdl_ttf_SOURCE_DIR}/include
     ${glm_SOURCE_DIR}
     ${tinygltf_SOURCE_DIR}
     ${physfs_SOURCE_DIR}/src
@@ -79,14 +87,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     SDL2::SDL2-static
     SDL2::SDL2main
     SDL2_mixer
+    SDL2_ttf
     libglew_static
     physfs-static
     ${OPENGL_LIBRARIES}
 )
 
-# --- 7. Resource Management ---
-
-# --- 7. Resource Management ---
 # --- 7. Resource Management ---
 
 # DEVELOPMENT: Always sync folders
