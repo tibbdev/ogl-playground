@@ -255,7 +255,7 @@ int main(int argc, char* argv[])
         std::cout << "TTF_Init Error: " << TTF_GetError() << std::endl;
     }
 
-    TTF_Font* font = TTF_OpenFont("assets/fonts/Quantico/Quantico-Bold.ttf", 24);
+    TTF_Font* font = TTF_OpenFont("assets/fonts/Quantico/Quantico-Bold.ttf", 36);
 
     // Request OpenGL 4.3 Core Profile
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -779,8 +779,8 @@ int main(int argc, char* argv[])
 
         glDrawElements(GL_TRIANGLES, basicCube.indx_cnt, basicCube.type, 0);
 
-        SDL_Color white = { 255, 255, 255, 255 };
-        SDL_Surface* textSurface = TTF_RenderText_Blended(font, fpsText.c_str(), white);
+        SDL_Color text_colour = { 245, 255, 25, 255 };
+        SDL_Surface* textSurface = TTF_RenderText_Blended(font, fpsText.c_str(), text_colour);
         if (textSurface)
         {
             GLuint textTexture = surfaceToTexture(textSurface);
